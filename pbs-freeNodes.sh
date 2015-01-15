@@ -13,10 +13,10 @@ then
 fi
 
 nodes_all=`pbsnodes -l all | grep $commonNodeName | wc -l`
-nodes_down=`pbsnodes -l all | grep $commonNodeName | grep down | wc -l`
-nodes_offline=`pbsnodes -l all | grep $commonNodeName | grep offline | wc -l`
+nodes_down=`pbsnodes -l down | grep $commonNodeName | wc -l`
+nodes_offline=`pbsnodes -l offline | grep $commonNodeName | wc -l`
 nodes_job=`pbsnodes -l all | grep $commonNodeName | grep job | wc -l`
-nodes_free=`pbsnodes -l all | grep $commonNodeName | grep free | wc -l`
+nodes_free=`pbsnodes -l free | grep $commonNodeName | wc -l`
 
 echo "--------------------------"
 echo "$commonNodeName nodes:"
