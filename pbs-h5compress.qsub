@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# Copyright 2015 Axel Huebl
+#
+#PBS -q laser
+#PBS -l walltime=24:00:00
+#PBS -N h5compress
+#PBS -l nodes=1:ppn=64
+##PBS -m bea -M someone@example.com
+#PBS -o h5compress_stdout
+#PBS -e h5compress_stderr
+#
+# Enter this directory and look for sub-directories
+# that contain a "simOutput/" directory themselves.
+# If they do so (a PIConGPU simulation) and if a
+# "stdout" file is found (job has finished) the hdf5
+# files within get compressed.
+# After that, a "compressed" file is created in the
+# simulation to avoid reading and compressing it again
+# in the future.
+#
+#PBS -d /some/directory/to/look/for/simulations
+
+export MODULES_NO_OUTPUT=1
+. /etc/profile.modules
+# modify these modules to your needs
+module purge
+module load gcc/4.6.2
+module load openmpi/1.8.4
+module load infiniband
+module load hdf5-parallel/1.8.14
+unset MODULES_NO_OUTPUT
+
+#set user rights to u=rwx;g=r-x;o=---
+umask 0027
+
+
+runs=($( ls -d */ ))
+
+for i in ${runs[@]}; do
+    dirName=`pwd`/${i}simOutput
+
+    if [ ! -d "$dirName" ]
+    then
+      echo "Missing simOutput in $dirName" 1>&2
+      continue
+    fi
+
+    if [ -e $dirName/../compressed ]
+    then
+      echo "Simulation already compressed in $dirName" 1>&2
+      continue
+    fi
+
+    echo "before: "`du -hs $dirName`
+
+    if [ ! -e $dirName/../stdout ]
+    then
+      echo "Simulation not yet finished in $dirName" 1>&2
+      continue
+    fi
+
+    cd $dirName
+
+    find $dirName -name "*.h5" | xargs -n1 -P64 -I{} \
+        sh -c 'echo "compress $1 ..." && \
+        h5repack -i $1 -o $1.gz -f GZIP=1 && mv $1.gz $1' _ {}
+
+    touch ../compressed
+
+    cd -
+done
