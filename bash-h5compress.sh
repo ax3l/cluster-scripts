@@ -11,6 +11,9 @@ then
   echo "Although compression and move are done sequentially,"
   echo "try not to abort it half-way (e.g., run in a `screen`)."
   echo ""
+  echo "By default, this script will compress up to 8 files in"
+  echo "parallel."
+  echo ""
   echo "$0 /path/to/dir"
   exit 1
 fi
