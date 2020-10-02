@@ -1,0 +1,51 @@
+##!/bin/bash
+# Copyright 2020 Axel HUebl
+#
+#BSUB -P <project>
+#BSUB -W 2:00
+#BSUB -nnodes 1
+#BSUB -alloc_flags smt4
+#BSUB -J compress
+#BSUB -o compress.e%J
+#BSUB -e compress.o%J
+
+runs=($( ls -d */ ))
+
+for i in ${runs[@]}; do
+    dirName=`pwd`/${i}diags  # diags -> simOutput for PIConGPU
+
+    echo "++++ ${i}"
+    echo "---- ${dirName}"
+
+    if [ ! -d "$dirName" ]
+    then
+      echo "Missing diags in $dirName" 1>&2
+      continue
+    fi
+
+    if [ -e $dirName/../compressed ]
+    then
+      echo "Simulation already compressed in $dirName" 1>&2
+      continue
+    fi
+
+    echo "before: "`du -hs $dirName`
+
+    if [ ! -e $dirName/../output.txt ]
+    then
+      echo "Simulation not yet finished in $dirName" 1>&2
+      continue
+    fi
+
+    cd $dirName
+
+    find $dirName -name "*.h5" | xargs -n1 -P42 -I{} \
+        sh -c 'echo "compress $1 ..." && \
+        h5repack -i $1 -o $1.gz -f GZIP=1 && mv $1.gz $1' _ {}
+
+    touch ../compressed
+
+    cd -
+
+    echo "after: "`du -hs $dirName`
+done
